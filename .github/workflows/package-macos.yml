@@ -1,0 +1,54 @@
+name: Package macOS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    name: Build ${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Check toolchain
+        run: |
+          swift --version
+          test "$(uname -m)" = "${{ matrix.arch }}"
+
+      - name: Run regression tests
+        run: bash scripts/test.sh
+
+      - name: Build application and installation packages
+        run: bash scripts/package.sh
+
+      - name: Upload installation packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: Sprout-macos-${{ matrix.arch }}
+          path: |
+            dist/Sprout-*.zip
+            dist/Sprout-*.dmg
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
