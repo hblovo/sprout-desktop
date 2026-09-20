@@ -4,6 +4,10 @@
 
 ## 下载与自动打包
 
+**直接安装：打开 [Releases](https://github.com/hblovo/sprout-desktop/releases/latest)，在 Assets 中下载对应芯片的 DMG。无需登录 GitHub。**
+
+发布新版时先更新 `Info.plist` 中的版本号，再推送对应的 `v版本号` 标签；也可在 Actions → Package macOS → Run workflow 勾选 `Publish version from Info.plist to Releases`。两种架构构建及校验都成功后，自动上传 DMG、ZIP 和校验文件，再公开 Release。已发布的版本不会自动覆盖；新版需使用新的版本号。
+
 仓库的 **Actions → Package macOS** 会在 `main` 更新时自动运行，也可以点击 **Run workflow** 手动启动。每次先运行回归测试，再分别生成 Apple Silicon（`arm64`）和 Intel（`x86_64`）安装包。
 
 打开成功的运行记录，在 **Artifacts** 中下载对应的 `Sprout-macos-arm64` 或 `Sprout-macos-x86_64`。解压后包含 `.dmg`、应用 `.zip` 和 SHA-256 校验文件；打开 DMG 后将「芽伴」拖入 Applications 即可。构建产物保留 14 天，过期可重新运行。
