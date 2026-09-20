@@ -3,7 +3,13 @@ name: Package macOS
 on:
   push:
     branches: [main]
+    tags: ['v*']
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: Publish version from Info.plist to Releases
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -52,3 +58,53 @@ jobs:
             dist/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
+
+  release:
+    name: Publish Release
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.publish_release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Download and verify both installers
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh run download "$GITHUB_RUN_ID" --name Sprout-macos-arm64 --dir artifacts/arm64
+          gh run download "$GITHUB_RUN_ID" --name Sprout-macos-x86_64 --dir artifacts/x86_64
+          (cd artifacts/arm64 && sha256sum -c SHA256SUMS.txt)
+          (cd artifacts/x86_64 && sha256sum -c SHA256SUMS.txt)
+          cat artifacts/arm64/SHA256SUMS.txt artifacts/x86_64/SHA256SUMS.txt > artifacts/SHA256SUMS.txt
+      - name: Publish versioned installers
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          VERSION=$(python3 -c 'import plistlib; print(plistlib.load(open("Info.plist", "rb"))["CFBundleShortVersionString"])')
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          TAG="v$VERSION"
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            test "$GITHUB_REF_NAME" = "$TAG"
+          fi
+          cat > release-notes.md <<'NOTES'
+          原生 macOS 健康桌宠：久坐提醒、饮水打卡、智能闲置感知与计时持久化。
+
+          - Apple Silicon（M 系列芯片）：下载 arm64.dmg。
+          - Intel Mac：下载 x86_64.dmg。
+          - 打开 DMG，将「芽伴」拖入 Applications。需要 macOS 14 或更新版本。
+          - ZIP 是应用的另一种压缩格式，无需重复下载。SHA256SUMS.txt 用于文件校验。
+
+          当前使用开发签名，尚未进行 Apple Developer ID 签名和公证。
+          NOTES
+          gh release create "$TAG" --target "$GITHUB_SHA" --draft --title "芽伴 $TAG" --notes-file release-notes.md \
+            "artifacts/arm64/Sprout-$VERSION-macos-arm64.dmg" \
+            "artifacts/arm64/Sprout-$VERSION-macos-arm64.zip" \
+            "artifacts/x86_64/Sprout-$VERSION-macos-x86_64.dmg" \
+            "artifacts/x86_64/Sprout-$VERSION-macos-x86_64.zip" artifacts/SHA256SUMS.txt
+          gh release edit "$TAG" --draft=false
