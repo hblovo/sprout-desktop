@@ -61,14 +61,14 @@ import SproutCore
     let url = directory.appendingPathComponent("health.json")
     let store = HealthStore(dataURL: url, systemIntegration: false)
     store.tick(uptime: ProcessInfo.processInfo.systemUptime + 8, idleSeconds: 0)
-    let previousFocus = store.engine.remaining
+    let previousFocus = store.engine.focusDuration
     store.startBreak()
     store.tick(uptime: ProcessInfo.processInfo.systemUptime + 7, idleSeconds: 0)
     store.shutdown()
     let reopened = HealthStore(dataURL: url, systemIntegration: false)
     #expect(reopened.engine.phase == .resting)
     #expect(reopened.engine.remaining == store.engine.remaining)
-    reopened.cancelBreak()
+    reopened.endBreak()
     #expect(reopened.engine.phase == .focus)
     #expect(reopened.engine.remaining == previousFocus)
 }

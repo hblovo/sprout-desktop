@@ -21,9 +21,9 @@ import Testing
     #expect(store.pendingBreak == nil)
 }
 
-@MainActor @Test func decliningManualBreakResumesPreviousFocusInsteadOfResettingIt() {
+@MainActor @Test func decliningCompletedBreakKeepsNewFocus() {
     let store = HealthStore(demo: true)
-    let originalRemaining = store.engine.remaining
+    let originalRemaining = store.engine.focusDuration
     let originalCount = store.data.breaks.count
     store.updatePreferences { $0.breakMinutes = 1 }
     store.startBreak()
