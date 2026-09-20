@@ -24,3 +24,28 @@ import Testing
     #expect(dashboard.presentation == pet.presentation)
     #expect(!dashboard.presentation.working)
 }
+
+@MainActor @Test func traeAnimationRespectsSettingAndHealthPriority() {
+    let store = HealthStore(demo: true, systemIntegration: false)
+    store.updatePreferences { $0.quietHoursEnabled = false }
+    store.codexAnimationEnabled = false
+    store.traeAnimationEnabled = false
+    store.traeActivity = .working
+    #expect(!store.mascotPresentation.working)
+    store.traeAnimationEnabled = true
+    #expect(store.mascotPresentation.working)
+    #expect(store.mascotPresentation.caption.contains("Trae 工作中"))
+    store.traeActivity = .waiting
+    #expect(!store.mascotPresentation.working)
+    #expect(store.mascotPresentation.caption.contains("等待确认"))
+    store.traeActivity = .working
+    store.codexAnimationEnabled = true
+    store.codexIsWorking = true
+    #expect(store.mascotPresentation.caption.contains("Codex + Trae"))
+    store.enginePreviewDue()
+    #expect(store.mascotPresentation.happy)
+    #expect(!store.mascotPresentation.working)
+    store.startBreak()
+    #expect(store.mascotPresentation.resting)
+    #expect(!store.mascotPresentation.working)
+}
