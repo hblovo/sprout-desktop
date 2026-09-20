@@ -5,11 +5,13 @@ public struct BreakCandidate: Codable, Equatable {
     public let date: Date
     public let seconds: Int
     public let fromIdle: Bool
-    public init(id: UUID = UUID(), date: Date, seconds: Int, fromIdle: Bool) {
+    public let focusRestarted: Bool?
+    public init(id: UUID = UUID(), date: Date, seconds: Int, fromIdle: Bool, focusRestarted: Bool? = nil) {
         self.id = id
         self.date = date
         self.seconds = seconds
         self.fromIdle = fromIdle
+        self.focusRestarted = focusRestarted
     }
 }
 
