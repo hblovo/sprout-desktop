@@ -67,6 +67,11 @@ import SproutCore
                         settingRow("显示桌宠", detail: "拖动可移动位置，点击打开面板，右键快捷操作") {
                             Toggle("显示桌宠", isOn: preference(\.petVisible)).labelsHidden().toggleStyle(.switch).controlSize(.small)
                         }
+                        settingRow("跟随 Codex 工作", detail: "检测到本机任务运行时，小芽会敲键盘") {
+                            Toggle("跟随 Codex 工作", isOn: $store.codexAnimationEnabled).labelsHidden().toggleStyle(.switch).controlSize(.small)
+                        }
+                        Text("本地读取 ~/.codex/sessions 中的任务开始和结束标记，不保存或上传对话内容。约 5 秒更新；15 分钟没有更新时恢复待机。暂不支持远程任务和自定义 Codex 数据目录。")
+                            .font(.system(size: 10)).foregroundStyle(Palette.secondary).lineSpacing(4)
                         settingRow("减少动态效果", detail: "让小芽安静地待在身边") {
                             Toggle("减少动态效果", isOn: preference(\.reduceMotion)).labelsHidden().toggleStyle(.switch).controlSize(.small)
                         }
@@ -87,7 +92,7 @@ import SproutCore
                         }
                     }
                 }
-                Text("芽伴 SPROUT · 1.0.0   /   为长时间坐在屏幕前的你而做。")
+                Text("芽伴 SPROUT · 1.1.3   /   为长时间坐在屏幕前的你而做。")
                     .font(.system(size: 10)).foregroundStyle(Palette.secondary).padding(.vertical, 9)
             }.padding(1)
         }.scrollIndicators(.hidden)

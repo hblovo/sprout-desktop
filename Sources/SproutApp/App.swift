@@ -130,7 +130,7 @@ import UserNotifications
             menu.addItem(item("刚才活动过了，记一次", action: #selector(confirmBreak)))
             menu.addItem(item("刚才没有活动，继续专注", action: #selector(dismissBreak)))
         } else if store.engine.phase == .resting {
-            menu.addItem(item("结束本次休息", action: #selector(cancelBreak)))
+            menu.addItem(item("结束休息，继续工作", action: #selector(endBreak)))
         } else {
             menu.addItem(item("现在休息一下", action: #selector(startBreak)))
         }
@@ -152,7 +152,7 @@ import UserNotifications
 
     @objc private func addWater() { store.addWater() }
     @objc private func startBreak() { store.startBreak() }
-    @objc private func cancelBreak() { store.cancelBreak() }
+    @objc private func endBreak() { store.endBreak() }
     @objc private func confirmBreak() { store.confirmBreak() }
     @objc private func dismissBreak() { store.dismissBreak() }
     @objc private func snooze() { store.snooze() }

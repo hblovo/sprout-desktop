@@ -67,7 +67,7 @@ import SproutCore
             }
             Spacer(minLength: 20)
             VStack(spacing: 6) {
-                Mascot(size: 81, resting: store.engine.isPaused, animate: !store.preferences.reduceMotion)
+                Mascot(size: 81, resting: store.mascotPresentation.resting, happy: store.mascotPresentation.happy, working: store.mascotPresentation.working, animate: !store.preferences.reduceMotion)
                     .padding(.top, 10)
                 Text("慢慢来，也很好").font(.system(size: 12, weight: .medium))
                 Text("让小芽陪你过好每一天").font(.system(size: 10)).foregroundStyle(Palette.secondary)
@@ -124,13 +124,14 @@ import SproutCore
             }.font(.system(size: 11)).foregroundStyle(store.toast == nil ? Palette.secondary : Palette.green)
                 .animation(.easeInOut(duration: 0.2), value: store.toast)
             Spacer()
-            Text("SPROUT  1.0").font(.system(size: 8, weight: .medium)).tracking(1.6).foregroundStyle(Palette.secondary.opacity(0.65))
+            Text("SPROUT  1.1.3").font(.system(size: 8, weight: .medium)).tracking(1.6).foregroundStyle(Palette.secondary.opacity(0.65))
         }.frame(height: 18)
     }
 }
 
 @MainActor struct DashboardView: View {
     @ObservedObject var store: HealthStore
+    var presentation: MascotPresentation { store.mascotPresentation }
     var body: some View {
         VStack(spacing: 18) {
             focusCard
@@ -149,17 +150,17 @@ import SproutCore
                     Text(heroTitle).font(.system(size: 13, weight: .medium))
                 }.foregroundStyle(Palette.green)
                 Text(timerLabel).font(.system(size: 11)).foregroundStyle(Palette.secondary).padding(.top, 24)
-                Text(store.pendingBreak != nil ? "欢迎回来" : (store.engine.phase == .due ? "动一动" : store.engine.displayTime))
-                    .font(.system(size: store.pendingBreak != nil ? 43 : (store.engine.phase == .due ? 49 : 63), weight: .light, design: .rounded))
+                Text(store.pendingBreak != nil && store.pendingBreak?.focusRestarted != true ? "欢迎回来" : (store.engine.phase == .due ? "动一动" : store.engine.displayTime))
+                    .font(.system(size: store.pendingBreak != nil && store.pendingBreak?.focusRestarted != true ? 43 : (store.engine.phase == .due ? 49 : 63), weight: .light, design: .rounded))
                     .monospacedDigit().tracking(1.5).padding(.top, 3)
-                    .accessibilityLabel(store.pendingBreak != nil ? "起身活动待确认" : (store.engine.phase == .due ? "休息提醒已到" : "剩余 \(store.engine.displayTime)"))
+                    .accessibilityLabel(store.pendingBreak != nil && store.pendingBreak?.focusRestarted != true ? "起身活动待确认" : (store.engine.phase == .due ? "休息提醒已到" : "剩余 \(store.engine.displayTime)"))
                 Text(timerDetail).font(.system(size: 11)).foregroundStyle(Palette.secondary).padding(.top, 5)
                 HStack(spacing: 10) {
                     Button {
                         if store.pendingBreak != nil { store.confirmBreak() }
-                        else if store.engine.phase == .resting { store.cancelBreak() } else { store.startBreak() }
+                        else if store.engine.phase == .resting { store.endBreak() } else { store.startBreak() }
                     } label: {
-                        Label(store.pendingBreak != nil ? "活动过了，记一次" : (store.engine.phase == .resting ? "结束本次休息" : "现在休息一下"), systemImage: store.engine.phase == .resting ? "arrow.uturn.backward" : "figure.walk")
+                        Label(store.pendingBreak != nil ? "活动过了，记一次" : (store.engine.phase == .resting ? "结束休息，继续工作" : "现在休息一下"), systemImage: store.engine.phase == .resting ? "arrow.uturn.backward" : "figure.walk")
                     }.buttonStyle(PrimaryButtonStyle()).accessibilityIdentifier("primary-break")
                     if store.pendingBreak != nil {
                         Button("没有，继续专注") { store.dismissBreak() }.buttonStyle(SoftButtonStyle())
@@ -177,8 +178,8 @@ import SproutCore
                 }.padding(.top, 20)
             }.padding(.leading, 28).padding(.vertical, 24)
             Spacer(minLength: 0)
-            MascotScene(resting: store.engine.phase == .resting || store.engine.isPaused,
-                        happy: store.engine.phase == .due,
+            MascotScene(resting: presentation.resting,
+                        happy: presentation.happy, working: presentation.working, caption: presentation.caption,
                         animate: !store.preferences.reduceMotion)
                 .padding(.trailing, 13)
         }.frame(maxWidth: .infinity, minHeight: 284)
@@ -198,7 +199,7 @@ import SproutCore
     }
     private var timerLabel: String {
         if let candidate = store.pendingBreak {
-            return candidate.fromIdle ? "检测到键鼠闲置约 \(candidate.seconds / 60) 分钟" : "休息倒计时已结束"
+            return candidate.fromIdle ? "检测到键鼠闲置约 \(candidate.seconds / 60) 分钟" : "新一轮专注已开始"
         }
         if store.idleAway && store.engine.phase != .resting { return "键鼠闲置超过 1 分钟 · 暂缓计时" }
         if store.engine.isPaused { return "计时已暂停 · 随时可以继续" }
@@ -210,7 +211,9 @@ import SproutCore
         }
     }
     private var timerDetail: String {
-        if store.pendingBreak != nil { return "确认后才记录；60 秒未回应会自动继续。" }
+        if let candidate = store.pendingBreak {
+            return candidate.focusRestarted == true ? "计时已继续；确认只记录活动，不重置计时。" : "确认后才记录；60 秒未回应会自动继续。"
+        }
         switch store.engine.phase {
         case .focus: return "每 \(store.preferences.focusMinutes) 分钟  ·  休息 \(store.preferences.breakMinutes) 分钟"
         case .due: return "站一站，走几步，看看远处。"

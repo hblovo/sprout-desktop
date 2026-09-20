@@ -15,6 +15,11 @@ import UserNotifications
     @Published private var historyStorageIssue: String?
     @Published private var sessionStorageIssue: String?
     @Published var waterNudge = false
+    @Published var codexIsWorking = false
+    @Published var codexAnimationEnabled = UserDefaults.standard.object(forKey: "codexAnimationEnabled") as? Bool ?? true {
+        didSet { if !isDemo { UserDefaults.standard.set(codexAnimationEnabled, forKey: "codexAnimationEnabled") } }
+    }
+    private var codexTask: Task<Void, Never>?
     @Published var notificationStatus = "关闭"
     @Published private(set) var idleAway = false
     @Published private(set) var pendingBreak: BreakCandidate?
@@ -76,7 +81,7 @@ import UserNotifications
                     if let candidate = pendingBreak, data.breaks.contains(where: { $0.id == candidate.id }) {
                         pendingBreak = nil
                         pendingReviewElapsed = 0
-                        engine.resetFocus()
+                        if candidate.focusRestarted != true { engine.resetFocus() }
                     }
                     lastSavedSession = saved
                 }
@@ -99,7 +104,7 @@ import UserNotifications
     var statusText: String {
         if systemSuspended { return "离开中" }
         if idleAway { return "暂离电脑" }
-        if pendingBreak != nil { return "欢迎回来" }
+        if let candidate = pendingBreak { return candidate.focusRestarted == true ? "专注中 · 活动待确认" : "欢迎回来" }
         if engine.isPaused { return "已暂停" }
         if quiet && engine.phase != .resting { return "安静时段" }
         switch engine.phase {
@@ -110,6 +115,19 @@ import UserNotifications
     }
 
     func start() {
+        if systemIntegration && codexTask == nil {
+            codexTask = Task { [weak self] in
+                let reader = CodexSessionReader()
+                while !Task.isCancelled {
+                    let enabled = self?.codexAnimationEnabled == true
+                    let open = NSWorkspace.shared.runningApplications.contains { $0.bundleIdentifier == "com.openai.codex" }
+                    let active = enabled && open ? await reader.working() : false
+                    guard !Task.isCancelled, self != nil else { return }
+                    self?.codexIsWorking = active
+                    do { try await Task.sleep(for: .seconds(5)) } catch { return }
+                }
+            }
+        }
         lastUptime = ProcessInfo.processInfo.systemUptime
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.tick() }
@@ -157,13 +175,13 @@ import UserNotifications
         }
         // Wake, lock and long scheduling gaps never produce catch-up reminders.
         guard !systemSuspended, delta > 0, delta < 10 else { return }
-        if pendingBreak != nil {
+        if let candidate = pendingBreak {
             if !remindersMuted { pendingReviewElapsed += delta }
             if pendingReviewElapsed >= 60 {
                 dismissBreak()
                 flash("这次未确认，暂不记入活动；已继续原来的计时。")
             }
-            return
+            if candidate.focusRestarted != true { return }
         }
         let event = engine.tick(elapsed: delta, quiet: (quiet || idleAway) && engine.phase != .resting)
         switch event {
@@ -171,11 +189,7 @@ import UserNotifications
             waterNudge = false
             notify(title: "起来走走，让身体换个姿势", body: "小芽等你一起休息 \(preferences.breakMinutes) 分钟。", identifier: "break")
         case .breakCompleted(let seconds):
-            if let previous = engineBeforeBreak { engine = previous }
-            engine.configure(focusMinutes: preferences.focusMinutes, breakMinutes: preferences.breakMinutes)
-            engineBeforeBreak = nil
-            pendingBreak = BreakCandidate(date: now, seconds: seconds, fromIdle: false)
-            pendingReviewElapsed = 0
+            finishRest(seconds: seconds)
             notify(title: "休息时间到了", body: "刚才有起身活动吗？点一下小芽确认，就会记入今天。", identifier: "complete")
         case nil:
             break
@@ -221,6 +235,7 @@ import UserNotifications
     }
 
     func startBreak() {
+        guard engine.phase != .resting, pendingBreak == nil else { return }
         pendingBreak = nil
         pendingReviewElapsed = 0
         engineBeforeBreak = engine
@@ -231,12 +246,24 @@ import UserNotifications
         checkpointSession(force: true)
     }
 
-    func cancelBreak() {
-        if let previous = engineBeforeBreak { engine = previous } else { engine.resetFocus() }
+    func endBreak() {
+        guard engine.phase == .resting else { return }
+        let elapsed = max(1, Int(ceil(engine.cycleDuration - engine.remaining)))
+        finishRest(seconds: elapsed)
+        flash("新一轮专注已开始；刚才是否活动，可单独确认。")
+    }
+
+    private func finishRest(seconds: Int) {
         engine.configure(focusMinutes: preferences.focusMinutes, breakMinutes: preferences.breakMinutes)
+        engine.resetFocus()
+        engine.setPaused(false)
         engineBeforeBreak = nil
-        lastUptime = ProcessInfo.processInfo.systemUptime
-        flash("已回到专注；未完成的休息不会计入记录。")
+        idleMonitor.reset()
+        idleAway = false
+        monitorStartedUptime = ProcessInfo.processInfo.systemUptime
+        lastUptime = monitorStartedUptime
+        pendingBreak = BreakCandidate(date: now, seconds: seconds, fromIdle: false, focusRestarted: true)
+        pendingReviewElapsed = 0
         clearNotifications()
         checkpointSession(force: true)
     }
@@ -250,12 +277,14 @@ import UserNotifications
         if !data.breaks.contains(where: { $0.id == candidate.id }) {
             data.breaks.append(BreakEntry(id: candidate.id, date: candidate.date, seconds: candidate.seconds))
         }
-        engine.resetFocus()
-        engine.setPaused(false)
-        lastUptime = ProcessInfo.processInfo.systemUptime
+        if candidate.focusRestarted != true {
+            engine.resetFocus()
+            engine.setPaused(false)
+            lastUptime = ProcessInfo.processInfo.systemUptime
+        }
         persist()
         clearNotifications()
-        flash("记下一次起身活动，新一轮专注开始啦。")
+        flash(candidate.focusRestarted == true ? "已记录活动，专注计时继续。" : "记下一次起身活动，新一轮专注开始啦。")
     }
 
     func dismissBreak() {

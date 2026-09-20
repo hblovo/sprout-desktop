@@ -65,14 +65,16 @@ final class PetPanel: NSPanel {
     @ObservedObject var store: HealthStore
     let menu: () -> NSMenu
     let moved: () -> Void
+    var interactionEnabled = true
     @State private var hovered = false
+    var presentation: MascotPresentation { store.mascotPresentation }
 
     var body: some View {
         VStack(spacing: 1) {
             Group {
                 if store.pendingBreak != nil && !store.remindersMuted {
                     VStack(spacing: 10) {
-                        Text("欢迎回来，刚才有起身吗？").font(.system(size: 12, weight: .medium))
+                        Text(store.pendingBreak?.focusRestarted == true ? "计时已继续，刚才有活动吗？" : "欢迎回来，刚才有起身吗？").font(.system(size: 12, weight: .medium))
                         HStack(spacing: 9) {
                             Button("有，记一次") { store.confirmBreak() }.buttonStyle(PrimaryButtonStyle(compact: true))
                             Button("没有") { store.dismissBreak() }.buttonStyle(.plain).font(.system(size: 11))
@@ -115,10 +117,10 @@ final class PetPanel: NSPanel {
                 }
             }.frame(height: 90, alignment: .bottom)
                 .shadow(color: .black.opacity(0.07), radius: 8, y: 3)
-            Mascot(size: 117, resting: store.engine.phase == .resting || store.remindersMuted,
-                   happy: store.engine.phase == .due && !store.remindersMuted, animate: !store.preferences.reduceMotion)
+            Mascot(size: 117, resting: presentation.resting,
+                   happy: presentation.happy, working: presentation.working, animate: !store.preferences.reduceMotion)
                 .overlay {
-                    PetDragArea(clicked: { store.showWindow?() }, moved: moved, menu: menu)
+                    if interactionEnabled { PetDragArea(clicked: { store.showWindow?() }, moved: moved, menu: menu) }
                 }
                 .padding(.top, 10)
             Text(petCaption).font(.system(size: 10, weight: .medium, design: .rounded)).monospacedDigit()
@@ -131,17 +133,11 @@ final class PetPanel: NSPanel {
         .foregroundStyle(Palette.ink)
         .onHover { hovered = $0 }
         .preferredColorScheme(.light)
+        
     }
 
-    private var petCaption: String {
-        if store.pendingBreak != nil && !store.idleAway { return "一点照顾，让小芽知道" }
-        if store.remindersMuted && store.engine.phase != .resting { return "小芽 · \(store.statusText)" }
-        switch store.engine.phase {
-        case .focus: return "小芽 · \(store.engine.displayTime) 后动一动"
-        case .due: return "陪你一起，伸个懒腰"
-        case .resting: return "呼吸一下 · \(store.engine.displayTime)"
-        }
-    }
+    private var petCaption: String { presentation.caption }
+
 }
 
 struct PetDragArea: NSViewRepresentable {

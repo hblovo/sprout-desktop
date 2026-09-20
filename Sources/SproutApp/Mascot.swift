@@ -31,6 +31,7 @@ struct Mascot: View {
     var size: CGFloat = 180
     var resting = false
     var happy = false
+    var working = false
     var animate = true
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @State private var breathe = false
@@ -42,14 +43,44 @@ struct Mascot: View {
             character
                 .offset(y: breathe && animate && !systemReduceMotion ? -size * 0.018 : 0)
                 .rotationEffect(.degrees(resting ? -5 : 0))
+            if working { workstation }
         }
         .frame(width: size, height: size * 1.1)
         .onAppear {
             guard animate && !systemReduceMotion else { return }
             withAnimation(.easeInOut(duration: 2.6).repeatForever(autoreverses: true)) { breathe = true }
         }
-        .accessibilityLabel(resting ? "正在休息的小芽" : "陪伴你的小芽")
+        .accessibilityLabel(working ? "正在陪 Codex 敲键盘的小芽" : resting ? "正在休息的小芽" : "陪伴你的小芽")
         .accessibilityAddTraits(.isImage)
+    }
+
+    private var workstation: some View {
+        TimelineView(.animation(minimumInterval: 0.16, paused: !animate || systemReduceMotion)) { timeline in
+            let moving = animate && !systemReduceMotion
+            let beat = moving && Int(timeline.date.timeIntervalSinceReferenceDate * 6).isMultiple(of: 2)
+            ZStack {
+                RoundedRectangle(cornerRadius: size * 0.025)
+                    .fill(Color(hex: 0x789385))
+                    .frame(width: size * 0.61, height: size * 0.28)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: size * 0.015)
+                            .fill(Color(hex: 0xEEF3E7)).padding(size * 0.025)
+                            .overlay {
+                                Text("</>").font(.system(size: size * 0.10, weight: .semibold, design: .monospaced))
+                                    .foregroundStyle(Palette.green)
+                            }
+                    }
+                    .offset(y: size * 0.23)
+                Capsule().fill(Color(hex: 0x91A698))
+                    .frame(width: size * 0.69, height: size * 0.045).offset(y: size * 0.38)
+                ForEach(0..<2) { hand in
+                    Ellipse().fill(Color(hex: 0xBED4AA))
+                        .frame(width: size * 0.13, height: size * 0.085)
+                        .offset(x: (hand == 0 ? -1 : 1) * size * 0.23,
+                                y: size * ((beat == (hand == 0)) ? 0.33 : 0.36))
+                }
+            }
+        }
     }
 
     private var character: some View {
@@ -103,6 +134,8 @@ struct Mascot: View {
 struct MascotScene: View {
     var resting = false
     var happy = false
+    var working = false
+    var caption = "身体也需要 commit 一点关心"
     var animate = true
     var body: some View {
         ZStack {
@@ -113,8 +146,8 @@ struct MascotScene: View {
             Image(systemName: "plus").font(.system(size: 13, weight: .light))
                 .foregroundStyle(Palette.green.opacity(0.35)).offset(x: -104, y: 35)
             Circle().fill(Palette.orange.opacity(0.45)).frame(width: 7, height: 7).offset(x: -90, y: -83)
-            Mascot(size: 177, resting: resting, happy: happy, animate: animate).offset(y: 15)
-            Text(resting ? "呼——让肩膀放松下来" : "身体也需要 commit 一点关心")
+            Mascot(size: 177, resting: resting, happy: happy, working: working, animate: animate).offset(y: 15)
+            Text(caption)
                 .font(.system(size: 10, weight: .medium)).foregroundStyle(Palette.green)
                 .padding(.horizontal, 13).padding(.vertical, 9)
                 .background(.white.opacity(0.85), in: Capsule()).offset(y: 114)
