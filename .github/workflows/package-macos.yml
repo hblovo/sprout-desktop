@@ -11,6 +11,11 @@ on:
         type: boolean
         default: false
 
+      skip_tests:
+        description: Skip regression tests already verified locally
+        type: boolean
+        default: false
+
 permissions:
   contents: read
 
@@ -43,6 +48,7 @@ jobs:
           test "$(uname -m)" = "${{ matrix.arch }}"
 
       - name: Run regression tests
+        if: ${{ !inputs.skip_tests }}
         run: bash scripts/test.sh
 
       - name: Build application and installation packages
