@@ -25,8 +25,14 @@ extension HealthStore {
             return MascotPresentation(happy: true, caption: "陪你一起，伸个懒腰")
         case .focus:
             if waterNudge { return MascotPresentation(caption: "忙碌间隙，也记得喝口水") }
-            if codexAnimationEnabled && codexIsWorking {
-                return MascotPresentation(working: true, caption: "Codex 工作中 · \(engine.displayTime) 后活动")
+            var activeTools: [String] = []
+            if codexAnimationEnabled && codexIsWorking { activeTools.append("Codex") }
+            if traeAnimationEnabled && traeActivity == .working { activeTools.append("Trae") }
+            if !activeTools.isEmpty {
+                return MascotPresentation(working: true, caption: "\(activeTools.joined(separator: " + ")) 工作中 · \(engine.displayTime) 后活动")
+            }
+            if traeAnimationEnabled && traeActivity == .waiting {
+                return MascotPresentation(caption: "Trae 等待确认 · \(engine.displayTime) 后活动")
             }
             return MascotPresentation(caption: "小芽 · \(engine.displayTime) 后动一动")
         }

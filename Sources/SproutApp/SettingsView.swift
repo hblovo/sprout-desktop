@@ -72,6 +72,17 @@ import SproutCore
                         }
                         Text("本地读取 ~/.codex/sessions 中的任务开始和结束标记，不保存或上传对话内容。约 5 秒更新；15 分钟没有更新时恢复待机。暂不支持远程任务和自定义 Codex 数据目录。")
                             .font(.system(size: 10)).foregroundStyle(Palette.secondary).lineSpacing(4)
+                        settingRow("跟随 Trae 中文版", detail: store.traeStatusText) {
+                            Toggle("跟随 Trae 中文版", isOn: $store.traeAnimationEnabled).labelsHidden().toggleStyle(.switch).controlSize(.small)
+                        }
+                        Text("需要在 Trae 中文版启用 Hooks。仅保存任务状态和时间；约 5 秒更新，15 分钟无事件恢复待机。")
+                            .font(.system(size: 10)).foregroundStyle(Palette.secondary).lineSpacing(4)
+                        HStack(spacing: 10) {
+                            Button("一键连接 Trae") { store.connectTrae() }.buttonStyle(SoftButtonStyle())
+                            Button("手动导出配置") { store.exportTraeHooks() }.buttonStyle(SoftButtonStyle())
+                        }
+                        Text("先将芽伴放入应用程序文件夹，再点击连接；自动备份并合并配置，保留已有 Hook。若未收到事件，请在 Trae 设置 → Hooks 中确认已启用。关闭上方开关只停止动画联动。")
+                            .font(.system(size: 10)).foregroundStyle(Palette.secondary).lineSpacing(4)
                         settingRow("减少动态效果", detail: "让小芽安静地待在身边") {
                             Toggle("减少动态效果", isOn: preference(\.reduceMotion)).labelsHidden().toggleStyle(.switch).controlSize(.small)
                         }
@@ -92,7 +103,7 @@ import SproutCore
                         }
                     }
                 }
-                Text("芽伴 SPROUT · 1.1.3   /   为长时间坐在屏幕前的你而做。")
+                Text("芽伴 SPROUT · 1.2.0   /   为长时间坐在屏幕前的你而做。")
                     .font(.system(size: 10)).foregroundStyle(Palette.secondary).padding(.vertical, 9)
             }.padding(1)
         }.scrollIndicators(.hidden)

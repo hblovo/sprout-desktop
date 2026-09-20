@@ -15,6 +15,10 @@ import UserNotifications
     @Published private var historyStorageIssue: String?
     @Published private var sessionStorageIssue: String?
     @Published var waterNudge = false
+    @Published var traeActivity: TraeActivity = .unavailable
+    @Published var traeAnimationEnabled = UserDefaults.standard.object(forKey: "traeAnimationEnabled") as? Bool ?? true {
+        didSet { if !isDemo { UserDefaults.standard.set(traeAnimationEnabled, forKey: "traeAnimationEnabled") } }
+    }
     @Published var codexIsWorking = false
     @Published var codexAnimationEnabled = UserDefaults.standard.object(forKey: "codexAnimationEnabled") as? Bool ?? true {
         didSet { if !isDemo { UserDefaults.standard.set(codexAnimationEnabled, forKey: "codexAnimationEnabled") } }
@@ -118,12 +122,17 @@ import UserNotifications
         if systemIntegration && codexTask == nil {
             codexTask = Task { [weak self] in
                 let reader = CodexSessionReader()
+                let traeReader = TraeSessionReader()
                 while !Task.isCancelled {
                     let enabled = self?.codexAnimationEnabled == true
                     let open = NSWorkspace.shared.runningApplications.contains { $0.bundleIdentifier == "com.openai.codex" }
                     let active = enabled && open ? await reader.working() : false
                     guard !Task.isCancelled, self != nil else { return }
                     self?.codexIsWorking = active
+                    let traeEnabled = self?.traeAnimationEnabled == true
+                    let trae = traeEnabled ? await traeReader.activity() : .unavailable
+                    guard !Task.isCancelled else { return }
+                    self?.traeActivity = trae
                     do { try await Task.sleep(for: .seconds(5)) } catch { return }
                 }
             }
@@ -405,6 +414,8 @@ import UserNotifications
     }
 
     func shutdown() {
+        codexTask?.cancel()
+        codexTask = nil
         timer?.invalidate()
         timer = nil
         checkpointSession(force: true)
