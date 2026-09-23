@@ -69,7 +69,7 @@ dist/芽伴.app/Contents/MacOS/Sprout --render-preview /tmp/sprout-preview
 
 `Sources/SproutCore` 负责计时状态、闲置判断、日期统计和文件持久化；`Sources/SproutApp` 负责主界面、桌宠、菜单栏、系统事件和通知。
 
-61 项测试覆盖提醒只触发一次、延后、暂停、休息完成待确认、重复确认防重、拒绝后恢复原计时、关闭闲置检测、锁屏与睡眠的组合状态、跨午夜、夏令时、饮水撤销、旧偏好兼容、损坏文件保护，以及普通计时／暂停／延后／进行中的休息／待确认活动的重启恢复。
+67 项测试覆盖提醒只触发一次、延后、暂停、休息完成待确认、重复确认防重、拒绝后恢复原计时、关闭闲置检测、锁屏与睡眠的组合状态、跨午夜、夏令时、饮水撤销、旧偏好兼容、损坏文件保护，以及普通计时／暂停／延后／进行中的休息／待确认活动的重启恢复。
 
 系统接口参考：[Apple 的输入闲置时长接口](https://developer.apple.com/documentation/coregraphics/cgeventsource/secondssincelasteventtype(_:eventtype:))、[本地通知授权](https://developer.apple.com/documentation/usernotifications/asking-permission-to-use-notifications)。
 
@@ -108,3 +108,10 @@ dist/芽伴.app/Contents/MacOS/Sprout --render-preview /tmp/sprout-preview
 已做模拟回归：开始、完成、等待、继续、多会话独立结束、过期、损坏输入、隐私字段过滤、配置路径引用、健康状态优先。仍需 Trae 用户验收：普通任务、长任务、取消任务、权限确认、两个同时执行的会话，以及沙箱中的助手执行权限。
 
 接口依据：[Trae 中文版 Hook 配置详解](https://docs.trae.cn/ide_hook-configuration-reference)。
+
+
+## 饮水成长（1.3.0）
+
+每日第一次从未达标达到饮水目标时，小芽庆祝 5 秒并获得 10 点成长值。初始 Lv.1，每累计 30 点升一级；饮水卡片展示等级和升级进度。当天多喝不额外加分，按需补水即可。
+
+已获得的成长值不随撤销或删除饮水记录扣除，也不能重复领取；仅调整目标不触发奖励。成长记录随健康数据持久保存，旧数据默认从 Lv.1 开始，不追溯历史奖励。日期按打卡时本地日期记录。重启不重播庆祝；减少动态效果开启时显示静态星光和成长提示。
