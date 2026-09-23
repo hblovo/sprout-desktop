@@ -93,6 +93,14 @@ public struct HealthData: Codable, Equatable {
     public var preferences = Preferences()
     public var water: [WaterEntry] = []
     public var breaks: [BreakEntry] = []
+    // Optional for compatibility with existing version-1 records. Earned days
+    // survive undo; a day can never award growth twice.
+    public var growthDays: [String]?
+    public var growthCount: Int { Set(growthDays ?? []).count }
+    public var level: Int { 1 + growthCount / 3 }
+    public var growthXP: Int { growthCount * 10 }
+    public var levelXP: Int { (growthCount % 3) * 10 }
+
 
     public init() {}
 
@@ -113,10 +121,19 @@ public struct HealthData: Codable, Equatable {
         }
     }
 
-    @discardableResult public mutating func addWater(_ amount: Int, at date: Date = Date()) -> UUID? {
+    @discardableResult public mutating func addWater(_ amount: Int, at date: Date = Date(), calendar: Calendar = .current) -> UUID? {
         guard (50...1000).contains(amount) else { return nil }
+        let previous = summary(on: date, calendar: calendar).waterML
         let entry = WaterEntry(date: date, milliliters: amount)
         water.append(entry)
+        if previous < preferences.waterGoalML && previous + amount >= preferences.waterGoalML {
+            var civil = Calendar(identifier: .gregorian)
+            civil.timeZone = calendar.timeZone
+            let parts = civil.dateComponents([.year, .month, .day], from: date)
+            let key = String(format: "%04d-%02d-%02d", parts.year!, parts.month!, parts.day!)
+            var days = growthDays ?? []
+            if !days.contains(key) { days.append(key); growthDays = days }
+        }
         return entry.id
     }
 
