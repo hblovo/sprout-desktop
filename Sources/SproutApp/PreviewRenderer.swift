@@ -25,6 +25,12 @@ import SwiftUI
            let bytes = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) {
             try bytes.write(to: directory.appendingPathComponent("芽伴-状态同步预览.png"))
         }
+        let growth = ImageRenderer(content: MascotScene(happy: true, growing: true, caption: "饮水达标 · Lv.2 · 成长值 +10", animate: false).padding(32).background(Color(hex: 0xF7F8F2)))
+        growth.scale = 2
+        if let image = growth.cgImage,
+           let bytes = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) {
+            try bytes.write(to: directory.appendingPathComponent("芽伴-成长预览.png"))
+        }
         let pet = ImageRenderer(content: Mascot(size: 220, working: true, animate: false).padding(30).background(Color(hex: 0xF7F8F2)))
         pet.scale = 2
         if let image = pet.cgImage,

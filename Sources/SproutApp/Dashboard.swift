@@ -67,7 +67,7 @@ import SproutCore
             }
             Spacer(minLength: 20)
             VStack(spacing: 6) {
-                Mascot(size: 81, resting: store.mascotPresentation.resting, happy: store.mascotPresentation.happy, working: store.mascotPresentation.working, animate: !store.preferences.reduceMotion)
+                Mascot(size: 81, resting: store.mascotPresentation.resting, happy: store.mascotPresentation.happy, working: store.mascotPresentation.working, growing: store.celebratingGrowth, animate: !store.preferences.reduceMotion)
                     .padding(.top, 10)
                 Text("慢慢来，也很好").font(.system(size: 12, weight: .medium))
                 Text("让小芽陪你过好每一天").font(.system(size: 10)).foregroundStyle(Palette.secondary)
@@ -83,10 +83,7 @@ import SproutCore
                 }.buttonStyle(.plain).padding(.top, 9).padding(.bottom, 17)
                     .help("桌宠可以拖动；点击打开主面板，右键显示快捷操作")
             }.frame(maxWidth: .infinity).background(Palette.greenLight.opacity(0.62), in: RoundedRectangle(cornerRadius: 18))
-            HStack(spacing: 5) {
-                Image(systemName: "lock.shield").font(.system(size: 10))
-                Text("只属于你的健康小角落").font(.system(size: 9))
-            }.foregroundStyle(Palette.secondary).frame(maxWidth: .infinity).padding(.top, 21).padding(.bottom, 24)
+                .padding(.bottom, 24)
         }.padding(.horizontal, 19).background(Palette.sidebar)
     }
 
@@ -124,7 +121,7 @@ import SproutCore
             }.font(.system(size: 11)).foregroundStyle(store.toast == nil ? Palette.secondary : Palette.green)
                 .animation(.easeInOut(duration: 0.2), value: store.toast)
             Spacer()
-            Text("SPROUT  1.1.3").font(.system(size: 8, weight: .medium)).tracking(1.6).foregroundStyle(Palette.secondary.opacity(0.65))
+            Text("SPROUT  1.3.0").font(.system(size: 8, weight: .medium)).tracking(1.6).foregroundStyle(Palette.secondary.opacity(0.65))
         }.frame(height: 18)
     }
 }
@@ -179,7 +176,7 @@ import SproutCore
             }.padding(.leading, 28).padding(.vertical, 24)
             Spacer(minLength: 0)
             MascotScene(resting: presentation.resting,
-                        happy: presentation.happy, working: presentation.working, caption: presentation.caption,
+                        happy: presentation.happy, working: presentation.working, growing: store.celebratingGrowth, caption: presentation.caption,
                         animate: !store.preferences.reduceMotion)
                 .padding(.trailing, 13)
         }.frame(maxWidth: .infinity, minHeight: 284)
@@ -259,7 +256,24 @@ import SproutCore
                     }.buttonStyle(.plain).foregroundStyle(Palette.secondary).disabled(store.todayWater.isEmpty)
                         .help("撤销最近一杯").accessibilityLabel("撤销最近一杯")
                 }
-                Text(store.todayWater.isEmpty ? "第一杯水，从现在开始。" : "最近一杯 \(store.todayWater[0].date.formatted(date: .omitted, time: .shortened)) · 每一口都算数")
+                VStack(alignment: .leading, spacing: 7) {
+                    HStack {
+                        Label("小芽 Lv.\(store.data.level)", systemImage: "leaf.fill")
+                        Spacer()
+                        Text("\(store.data.levelXP) / 30 成长值")
+                    }.font(.system(size: 11, weight: .medium)).foregroundStyle(Palette.green)
+                    GeometryReader { geometry in
+                        Capsule().fill(Palette.green.opacity(0.10))
+                            .overlay(alignment: .leading) {
+                                Capsule().fill(Palette.green)
+                                    .frame(width: geometry.size.width * Double(store.data.levelXP) / 30)
+                            }
+                    }.frame(height: 5)
+                        .accessibilityLabel("升级进度，\(store.data.levelXP) / 30 成长值")
+                    Text("每日首次达标 +10 · 每 3 个达标日升一级，按需补水就好")
+                        .font(.system(size: 9)).foregroundStyle(Palette.secondary)
+                }.padding(.top, 4)
+                Text(store.todayWater.isEmpty ? "今日暂无饮水记录" : "最近一杯 \(store.todayWater[0].date.formatted(date: .omitted, time: .shortened))")
                     .font(.system(size: 10)).foregroundStyle(Palette.secondary)
             }
         }
@@ -278,10 +292,8 @@ import SproutCore
                     Text("累计休息 \(store.today.breakSeconds / 60) 分钟").font(.system(size: 11))
                 }.foregroundStyle(Palette.secondary)
                 Rectangle().fill(Palette.line).frame(height: 1).padding(.top, 2)
-                Text(store.today.breakCount == 0 ? "从一次小小的起身开始，\n让身体舒展一下。" : "每一次暂停，\n都是对自己的照顾。")
-                    .font(.system(size: 11)).lineSpacing(5).foregroundStyle(Palette.green)
                 Button { store.selectedPage = .history } label: {
-                    HStack { Text("看看我的记录"); Image(systemName: "arrow.up.right").font(.system(size: 9)) }
+                    HStack { Text("查看记录"); Image(systemName: "arrow.up.right").font(.system(size: 9)) }
                         .font(.system(size: 10))
                 }.buttonStyle(.plain).foregroundStyle(Palette.secondary)
             }

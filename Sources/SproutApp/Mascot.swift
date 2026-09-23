@@ -32,6 +32,7 @@ struct Mascot: View {
     var resting = false
     var happy = false
     var working = false
+    var growing = false
     var animate = true
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @State private var breathe = false
@@ -41,16 +42,33 @@ struct Mascot: View {
             Ellipse().fill(Palette.green.opacity(0.11))
                 .frame(width: size * 0.65, height: size * 0.08).offset(y: size * 0.43)
             character
+                .scaleEffect(growing ? 1.07 : 1)
+                .animation(animate && !systemReduceMotion ? .spring(response: 0.6, dampingFraction: 0.45) : nil, value: growing)
                 .offset(y: breathe && animate && !systemReduceMotion ? -size * 0.018 : 0)
                 .rotationEffect(.degrees(resting ? -5 : 0))
             if working { workstation }
+            if growing {
+                TimelineView(.animation(minimumInterval: 0.05, paused: !animate || systemReduceMotion)) { timeline in
+                    let phase = animate && !systemReduceMotion ? timeline.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1.8) / 1.8 : 0.5
+                    ZStack {
+                        Circle().stroke(Palette.green.opacity(0.25 * (1 - phase)), lineWidth: 2)
+                            .frame(width: size * (0.7 + phase * 0.3), height: size * (0.7 + phase * 0.3))
+                        ForEach(0..<6) { index in
+                            let angle = Double(index) * .pi / 3
+                            Image(systemName: "sparkle")
+                                .font(.system(size: size * 0.075)).foregroundStyle(Palette.green.opacity(0.8))
+                                .offset(x: cos(angle) * size * 0.43, y: sin(angle) * size * 0.4 - size * phase * 0.06)
+                        }
+                    }
+                }.allowsHitTesting(false)
+            }
         }
         .frame(width: size, height: size * 1.1)
         .onAppear {
             guard animate && !systemReduceMotion else { return }
             withAnimation(.easeInOut(duration: 2.6).repeatForever(autoreverses: true)) { breathe = true }
         }
-        .accessibilityLabel(working ? "正在陪 Codex 敲键盘的小芽" : resting ? "正在休息的小芽" : "陪伴你的小芽")
+        .accessibilityLabel(growing ? "饮水达标，正在成长的小芽" : working ? "正在敲键盘的小芽" : resting ? "正在休息的小芽" : "陪伴你的小芽")
         .accessibilityAddTraits(.isImage)
     }
 
@@ -90,9 +108,9 @@ struct Mascot: View {
             Capsule().fill(Color(hex: 0xB4CDA1)).frame(width: size * 0.13, height: size * 0.18)
                 .rotationEffect(.degrees(-18)).offset(x: size * 0.17, y: size * 0.35)
             Capsule().fill(Color(hex: 0xBED4AA)).frame(width: size * 0.14, height: size * 0.25)
-                .rotationEffect(.degrees(happy ? -65 : 32)).offset(x: -size * 0.35, y: size * 0.09)
+                .rotationEffect(.degrees(happy || growing ? -65 : 32)).offset(x: -size * 0.35, y: size * 0.09)
             Capsule().fill(Color(hex: 0xBED4AA)).frame(width: size * 0.14, height: size * 0.25)
-                .rotationEffect(.degrees(happy ? 65 : -32)).offset(x: size * 0.35, y: size * 0.09)
+                .rotationEffect(.degrees(happy || growing ? 65 : -32)).offset(x: size * 0.35, y: size * 0.09)
             SproutBody()
                 .fill(LinearGradient(colors: [Color(hex: 0xE5EDCE), Color(hex: 0xCDDEB6)], startPoint: .topLeading, endPoint: .bottomTrailing))
                 .overlay(SproutBody().stroke(Color(hex: 0xB4CB9B).opacity(0.6), lineWidth: size * 0.006))
@@ -103,7 +121,7 @@ struct Mascot: View {
             Capsule().fill(Palette.green).frame(width: size * 0.026, height: size * 0.17)
                 .rotationEffect(.degrees(12)).offset(y: -size * 0.4)
             Leaf().fill(Color(hex: 0x789C63)).frame(width: size * 0.23, height: size * 0.14)
-                .rotationEffect(.degrees(-5)).offset(x: size * 0.1, y: -size * 0.47)
+                .rotationEffect(.degrees(growing ? -22 : -5)).offset(x: size * 0.1, y: -size * 0.47)
             Leaf().fill(Color(hex: 0x9DB87A)).frame(width: size * 0.19, height: size * 0.12)
                 .rotationEffect(.degrees(-90)).offset(x: -size * 0.09, y: -size * 0.43)
             HStack(spacing: size * 0.18) {
@@ -135,6 +153,7 @@ struct MascotScene: View {
     var resting = false
     var happy = false
     var working = false
+    var growing = false
     var caption = "身体也需要 commit 一点关心"
     var animate = true
     var body: some View {
@@ -146,7 +165,7 @@ struct MascotScene: View {
             Image(systemName: "plus").font(.system(size: 13, weight: .light))
                 .foregroundStyle(Palette.green.opacity(0.35)).offset(x: -104, y: 35)
             Circle().fill(Palette.orange.opacity(0.45)).frame(width: 7, height: 7).offset(x: -90, y: -83)
-            Mascot(size: 177, resting: resting, happy: happy, working: working, animate: animate).offset(y: 15)
+            Mascot(size: 177, resting: resting, happy: happy, working: working, growing: growing, animate: animate).offset(y: 15)
             Text(caption)
                 .font(.system(size: 10, weight: .medium)).foregroundStyle(Palette.green)
                 .padding(.horizontal, 13).padding(.vertical, 9)

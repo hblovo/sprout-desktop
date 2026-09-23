@@ -118,7 +118,7 @@ final class PetPanel: NSPanel {
             }.frame(height: 90, alignment: .bottom)
                 .shadow(color: .black.opacity(0.07), radius: 8, y: 3)
             Mascot(size: 117, resting: presentation.resting,
-                   happy: presentation.happy, working: presentation.working, animate: !store.preferences.reduceMotion)
+                   happy: presentation.happy, working: presentation.working, growing: store.celebratingGrowth, animate: !store.preferences.reduceMotion)
                 .overlay {
                     if interactionEnabled { PetDragArea(clicked: { store.showWindow?() }, moved: moved, menu: menu) }
                 }

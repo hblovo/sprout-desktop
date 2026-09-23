@@ -24,6 +24,7 @@ extension HealthStore {
         case .due:
             return MascotPresentation(happy: true, caption: "陪你一起，伸个懒腰")
         case .focus:
+            if celebratingGrowth { return MascotPresentation(happy: true, caption: "饮水达标 · Lv.\(data.level) · 成长值 +10") }
             if waterNudge { return MascotPresentation(caption: "忙碌间隙，也记得喝口水") }
             var activeTools: [String] = []
             if codexAnimationEnabled && codexIsWorking { activeTools.append("Codex") }

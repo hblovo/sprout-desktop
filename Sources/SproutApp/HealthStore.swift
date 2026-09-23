@@ -14,6 +14,8 @@ import UserNotifications
     @Published var toast: String?
     @Published private var historyStorageIssue: String?
     @Published private var sessionStorageIssue: String?
+    @Published private(set) var celebratingGrowth = false
+    private var growthTask: Task<Void, Never>?
     @Published var waterNudge = false
     @Published var traeActivity: TraeActivity = .unavailable
     @Published var traeAnimationEnabled = UserDefaults.standard.object(forKey: "traeAnimationEnabled") as? Bool ?? true {
@@ -223,11 +225,23 @@ import UserNotifications
 
     func addWater(_ amount: Int? = nil) {
         now = Date()
+        let previousGrowth = data.growthCount
+        let previousLevel = data.level
         guard data.addWater(amount ?? preferences.cupML, at: now) != nil else { return }
         waterElapsed = 0
         waterNudge = false
         persist()
         if systemIntegration { UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ["water"]) }
+        if data.growthCount > previousGrowth {
+            celebratingGrowth = true
+            growthTask?.cancel()
+            growthTask = Task { [weak self] in
+                do { try await Task.sleep(for: .seconds(5)) } catch { return }
+                self?.celebratingGrowth = false
+            }
+            flash(data.level > previousLevel ? "小芽升级啦！Lv.\(data.level) · 成长值 +10" : "饮水达标，小芽长大一点 · 成长值 +10")
+            return
+        }
         flash(today.waterML >= preferences.waterGoalML ? "今天的饮水目标完成啦，按需补水就好。" : "记下这一杯，小芽也精神了一点。")
     }
 
@@ -414,6 +428,8 @@ import UserNotifications
     }
 
     func shutdown() {
+        growthTask?.cancel()
+        celebratingGrowth = false
         codexTask?.cancel()
         codexTask = nil
         timer?.invalidate()

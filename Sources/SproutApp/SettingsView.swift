@@ -103,7 +103,7 @@ import SproutCore
                         }
                     }
                 }
-                Text("芽伴 SPROUT · 1.2.0   /   为长时间坐在屏幕前的你而做。")
+                Text("芽伴 SPROUT · 1.3.0   /   为长时间坐在屏幕前的你而做。")
                     .font(.system(size: 10)).foregroundStyle(Palette.secondary).padding(.vertical, 9)
             }.padding(1)
         }.scrollIndicators(.hidden)
