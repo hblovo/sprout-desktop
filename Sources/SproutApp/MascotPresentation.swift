@@ -28,6 +28,7 @@ extension HealthStore {
             if waterNudge { return MascotPresentation(caption: "忙碌间隙，也记得喝口水") }
             var activeTools: [String] = []
             if codexAnimationEnabled && codexIsWorking { activeTools.append("Codex") }
+            if joycodeAnimationEnabled && joycodeIsWorking { activeTools.append("JoyCode Beta") }
             if traeAnimationEnabled && traeActivity == .working { activeTools.append("Trae") }
             if !activeTools.isEmpty {
                 return MascotPresentation(working: true, caption: "\(activeTools.joined(separator: " + ")) 工作中 · \(engine.displayTime) 后活动")

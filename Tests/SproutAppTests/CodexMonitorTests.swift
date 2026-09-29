@@ -9,7 +9,7 @@ import Testing
     let file = root.appendingPathComponent("session.jsonl")
     let started = "{\"type\":\"event_msg\",\"payload\":{\"type\":\"task_started\",\"turn_id\":\"a\"}}\n"
     let finished = "{\"type\":\"event_msg\",\"payload\":{\"type\":\"task_complete\",\"turn_id\":\"a\"}}\n"
-    let reader = CodexSessionReader(root: root)
+    let reader = LocalAgentSessionReader(agent: .codex, root: root)
     #expect(await !reader.working())
     try Data(started.utf8).write(to: file)
     #expect(await reader.working())

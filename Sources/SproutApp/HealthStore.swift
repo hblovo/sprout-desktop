@@ -25,7 +25,11 @@ import UserNotifications
     @Published var codexAnimationEnabled = UserDefaults.standard.object(forKey: "codexAnimationEnabled") as? Bool ?? true {
         didSet { if !isDemo { UserDefaults.standard.set(codexAnimationEnabled, forKey: "codexAnimationEnabled") } }
     }
-    private var codexTask: Task<Void, Never>?
+    @Published var joycodeIsWorking = false
+    @Published var joycodeAnimationEnabled = UserDefaults.standard.object(forKey: "joycodeAnimationEnabled") as? Bool ?? true {
+        didSet { if !isDemo { UserDefaults.standard.set(joycodeAnimationEnabled, forKey: "joycodeAnimationEnabled") } }
+    }
+    private var activityTask: Task<Void, Never>?
     @Published var notificationStatus = "关闭"
     @Published private(set) var idleAway = false
     @Published private(set) var pendingBreak: BreakCandidate?
@@ -121,16 +125,21 @@ import UserNotifications
     }
 
     func start() {
-        if systemIntegration && codexTask == nil {
-            codexTask = Task { [weak self] in
-                let reader = CodexSessionReader()
+        if systemIntegration && activityTask == nil {
+            activityTask = Task { [weak self] in
+                let codexReader = LocalAgentSessionReader(agent: .codex)
+                let joycodeReader = LocalAgentSessionReader(agent: .joycodeBeta)
                 let traeReader = TraeSessionReader()
                 while !Task.isCancelled {
-                    let enabled = self?.codexAnimationEnabled == true
-                    let open = NSWorkspace.shared.runningApplications.contains { $0.bundleIdentifier == "com.openai.codex" }
-                    let active = enabled && open ? await reader.working() : false
+                    let running = Set(NSWorkspace.shared.runningApplications.compactMap(\.bundleIdentifier))
+                    let codex = await codexReader.working(enabled: self?.codexAnimationEnabled == true,
+                                                          runningBundleIdentifiers: running)
                     guard !Task.isCancelled, self != nil else { return }
-                    self?.codexIsWorking = active
+                    self?.codexIsWorking = codex
+                    let joycode = await joycodeReader.working(enabled: self?.joycodeAnimationEnabled == true,
+                                                              runningBundleIdentifiers: running)
+                    guard !Task.isCancelled else { return }
+                    self?.joycodeIsWorking = joycode
                     let traeEnabled = self?.traeAnimationEnabled == true
                     let trae = traeEnabled ? await traeReader.activity() : .unavailable
                     guard !Task.isCancelled else { return }
@@ -430,8 +439,8 @@ import UserNotifications
     func shutdown() {
         growthTask?.cancel()
         celebratingGrowth = false
-        codexTask?.cancel()
-        codexTask = nil
+        activityTask?.cancel()
+        activityTask = nil
         timer?.invalidate()
         timer = nil
         checkpointSession(force: true)

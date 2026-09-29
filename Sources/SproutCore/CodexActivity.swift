@@ -1,6 +1,7 @@
 import Foundation
 
-/// Decodes only lifecycle metadata. Message bodies are neither retained nor exposed.
+/// Decodes lifecycle metadata shared by Codex and JoyCode Beta rollout files.
+/// Message bodies are neither retained nor exposed.
 public struct CodexActivity: Sendable {
     public private(set) var activeTurns: Set<String> = []
     public init() {}
@@ -12,7 +13,7 @@ public struct CodexActivity: Sendable {
             let type: String
             let payload: Payload
         }
-        // The final partial line may still be being written by Codex.
+        // The final partial line may still be being written by the client.
         let lines = data.split(separator: 10, omittingEmptySubsequences: false)
         for line in lines.dropLast() {
             guard let event = try? JSONDecoder().decode(Event.self, from: Data(line)),

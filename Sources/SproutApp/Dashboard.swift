@@ -121,7 +121,7 @@ import SproutCore
             }.font(.system(size: 11)).foregroundStyle(store.toast == nil ? Palette.secondary : Palette.green)
                 .animation(.easeInOut(duration: 0.2), value: store.toast)
             Spacer()
-            Text("SPROUT  1.3.0").font(.system(size: 8, weight: .medium)).tracking(1.6).foregroundStyle(Palette.secondary.opacity(0.65))
+            Text("SPROUT  1.4.0").font(.system(size: 8, weight: .medium)).tracking(1.6).foregroundStyle(Palette.secondary.opacity(0.65))
         }.frame(height: 18)
     }
 }

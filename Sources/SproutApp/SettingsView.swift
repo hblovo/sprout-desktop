@@ -72,6 +72,13 @@ import SproutCore
                         }
                         Text("本地读取 ~/.codex/sessions 中的任务开始和结束标记，不保存或上传对话内容。约 5 秒更新；15 分钟没有更新时恢复待机。暂不支持远程任务和自定义 Codex 数据目录。")
                             .font(.system(size: 10)).foregroundStyle(Palette.secondary).lineSpacing(4)
+                        settingRow("跟随 JoyCode Beta 工作", detail: !store.joycodeAnimationEnabled ? "已关闭" : (store.joycodeIsWorking ? "工作中 · 小芽正在敲键盘" : "未检测到运行中的任务")) {
+                            Toggle("跟随 JoyCode Beta 工作", isOn: $store.joycodeAnimationEnabled).labelsHidden().toggleStyle(.switch).controlSize(.small)
+                        }
+                        Text("打开 JoyCode Beta 后自动跟随本机会话，约 5 秒更新；任务完成、中断或退出 Beta 后恢复待机。无需配置 Hook。")
+                            .font(.system(size: 10)).foregroundStyle(Palette.secondary).lineSpacing(4)
+                        Text("仅读取 ~/.joycode/sessions 的任务状态标记，不保存或上传对话内容。15 分钟没有更新时恢复待机；等待确认可能仍显示工作。支持默认数据目录中的本地任务。")
+                            .font(.system(size: 10)).foregroundStyle(Palette.secondary).lineSpacing(4)
                         settingRow("跟随 Trae 中文版", detail: store.traeStatusText) {
                             Toggle("跟随 Trae 中文版", isOn: $store.traeAnimationEnabled).labelsHidden().toggleStyle(.switch).controlSize(.small)
                         }
@@ -103,7 +110,7 @@ import SproutCore
                         }
                     }
                 }
-                Text("芽伴 SPROUT · 1.3.0   /   为长时间坐在屏幕前的你而做。")
+                Text("芽伴 SPROUT · 1.4.0   /   为长时间坐在屏幕前的你而做。")
                     .font(.system(size: 10)).foregroundStyle(Palette.secondary).padding(.vertical, 9)
             }.padding(1)
         }.scrollIndicators(.hidden)

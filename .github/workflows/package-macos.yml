@@ -101,6 +101,8 @@ jobs:
           cat > release-notes.md <<'NOTES'
           原生 macOS 健康桌宠：久坐提醒、饮水打卡、智能闲置感知与计时持久化。
 
+          新增 JoyCode Beta 工作联动：默认开启，约 5 秒同步本地任务的开始、完成和中断状态，支持多会话。可在偏好设置独立关闭，无需配置 Hook。等待确认可能仍显示工作；健康提醒优先于工作动画。
+
           - Apple Silicon（M 系列芯片）：下载 arm64.dmg。
           - Intel Mac：下载 x86_64.dmg。
           - 打开 DMG，将「芽伴」拖入 Applications。需要 macOS 14 或更新版本。

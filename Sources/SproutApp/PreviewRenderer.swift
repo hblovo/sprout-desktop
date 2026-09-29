@@ -14,6 +14,15 @@ import SwiftUI
         guard let bytes = bitmap.representation(using: .png, properties: [:]) else { throw RenderError.failed }
         try bytes.write(to: directory.appendingPathComponent("芽伴-界面预览.png"))
         store.updatePreferences { $0.quietHoursEnabled = false }
+        store.joycodeAnimationEnabled = true
+        store.joycodeIsWorking = true
+        let joycode = ImageRenderer(content: RootView(store: store).frame(width: 1100, height: 800))
+        joycode.scale = 2
+        if let image = joycode.cgImage,
+           let bytes = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) {
+            try bytes.write(to: directory.appendingPathComponent("芽伴-JoyCode工作预览.png"))
+        }
+        store.joycodeIsWorking = false
         store.enginePreviewDue()
         let state = store.mascotPresentation
         let comparison = ImageRenderer(content: HStack(spacing: 24) {

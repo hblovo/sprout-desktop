@@ -1,18 +1,46 @@
-import AppKit
-import SwiftUI
+import Foundation
 import SproutCore
 
-/// Compatibility adapter for local Codex rollout files, not a public desktop API.
-actor CodexSessionReader {
+/// Only clients verified to use the Codex rollout lifecycle format belong here.
+enum LocalAgent: CaseIterable, Sendable {
+    case codex, joycodeBeta
+
+    var bundleIdentifier: String {
+        switch self {
+        case .codex: return "com.openai.codex"
+        case .joycodeBeta: return "com.joycode.cli"
+        }
+    }
+
+    func sessionsDirectory(home: URL = FileManager.default.homeDirectoryForCurrentUser) -> URL {
+        switch self {
+        case .codex: return home.appendingPathComponent(".codex/sessions")
+        case .joycodeBeta: return home.appendingPathComponent(".joycode/sessions")
+        }
+    }
+}
+
+/// Compatibility adapter for local rollout files, not a public desktop API.
+actor LocalAgentSessionReader {
     private struct Cached {
         var modified: Date
         var size: Int
         var activity: CodexActivity
     }
     private var cache: [URL: Cached] = [:]
+    private let agent: LocalAgent
     private let root: URL
-    init(root: URL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".codex/sessions")) {
-        self.root = root
+    init(agent: LocalAgent, root: URL? = nil) {
+        self.agent = agent
+        self.root = root ?? agent.sessionsDirectory()
+    }
+
+    func working(enabled: Bool, runningBundleIdentifiers: Set<String>, now: Date = Date()) -> Bool {
+        guard enabled, runningBundleIdentifiers.contains(agent.bundleIdentifier) else {
+            cache.removeAll()
+            return false
+        }
+        return working(now: now)
     }
 
     func working(now: Date = Date()) -> Bool {
@@ -26,6 +54,7 @@ actor CodexSessionReader {
             guard let values = try? url.resourceValues(forKeys: Set(keys)),
                   values.isRegularFile == true, values.isSymbolicLink != true,
                   let modified = values.contentModificationDate,
+                  now.timeIntervalSince(modified) >= 0,
                   now.timeIntervalSince(modified) < 900 else { continue }
             candidates.append((url, modified, values.fileSize ?? 0))
         }

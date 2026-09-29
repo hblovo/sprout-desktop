@@ -2,6 +2,39 @@ import AppKit
 import Testing
 @testable import SproutApp
 
+@MainActor @Test func joycodeAnimationSharesPresentationAndRespectsHealthPriority() {
+    let store = HealthStore(demo: true, systemIntegration: false)
+    store.updatePreferences { $0.quietHoursEnabled = false }
+    store.joycodeAnimationEnabled = false
+    store.joycodeIsWorking = true
+    #expect(!store.mascotPresentation.working)
+    store.joycodeAnimationEnabled = true
+    let dashboard = DashboardView(store: store)
+    let pet = DesktopPetView(store: store, menu: { NSMenu() }, moved: {})
+    #expect(dashboard.presentation == pet.presentation)
+    #expect(dashboard.presentation.working)
+    #expect(dashboard.presentation.caption.contains("JoyCode Beta 工作中"))
+    store.codexAnimationEnabled = true
+    store.codexIsWorking = true
+    store.traeAnimationEnabled = true
+    store.traeActivity = .working
+    #expect(store.mascotPresentation.caption.contains("Codex + JoyCode Beta + Trae"))
+    store.suspend(true, reason: "test")
+    #expect(store.mascotPresentation.resting)
+    #expect(!store.mascotPresentation.working)
+    store.suspend(false, reason: "test")
+    store.togglePause()
+    #expect(!store.mascotPresentation.working)
+    store.togglePause()
+    store.enginePreviewDue()
+    #expect(dashboard.presentation == pet.presentation)
+    #expect(dashboard.presentation.happy)
+    #expect(!dashboard.presentation.working)
+    store.startBreak()
+    #expect(dashboard.presentation.resting)
+    #expect(!dashboard.presentation.working)
+}
+
 @MainActor @Test func bothMascotsShareDueAndCodexState() {
     let store = HealthStore(demo: true, systemIntegration: false)
     store.updatePreferences { $0.quietHoursEnabled = false }
